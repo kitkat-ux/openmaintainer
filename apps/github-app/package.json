@@ -1,0 +1,28 @@
+{
+  "name": "@openmaintainer/github-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@octokit/auth-app": "^7.1.1",
+    "@octokit/rest": "^21.1.0",
+    "@openmaintainer/ai": "workspace:*",
+    "@openmaintainer/config": "workspace:*",
+    "@openmaintainer/core": "workspace:*",
+    "@openmaintainer/github": "workspace:*",
+    "@openmaintainer/logger": "workspace:*",
+    "@openmaintainer/shared": "workspace:*",
+    "fastify": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2"
+  }
+}

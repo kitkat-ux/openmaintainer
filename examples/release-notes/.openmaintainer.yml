@@ -1,0 +1,7 @@
+version: 1
+review:
+  enabled: false
+issues:
+  enabled: false
+releaseNotes:
+  enabled: true

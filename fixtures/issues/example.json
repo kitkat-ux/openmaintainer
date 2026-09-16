@@ -1,0 +1,6 @@
+{
+  "repository": "example/project",
+  "number": 7,
+  "title": "Search fails for apostrophes",
+  "body": "When I search for O'Reilly, the request returns an error. Steps to reproduce: enter the name. Expected: a result; actual: a 500 response."
+}

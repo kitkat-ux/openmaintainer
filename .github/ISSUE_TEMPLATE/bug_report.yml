@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible problem with OpenMaintainer.
+title: 'bug: '
+labels: [bug, triage]
+body:
+  - type: input
+    id: version
+    attributes: { label: OpenMaintainer version, placeholder: 0.1.0 }
+    validations: { required: true }
+  - type: input
+    id: node
+    attributes: { label: Node version }
+  - type: input
+    id: deployment
+    attributes: { label: Deployment method, placeholder: Docker, plain Node, GitHub App }
+  - type: textarea
+    id: config
+    attributes:
+      {
+        label: Configuration,
+        description: Remove API keys,
+        private keys,
+        webhook secrets,
+        and private data.,
+      }
+  - type: textarea
+    id: expected
+    attributes: { label: Expected behavior }
+    validations: { required: true }
+  - type: textarea
+    id: actual
+    attributes: { label: Actual behavior }
+    validations: { required: true }
+  - type: textarea
+    id: logs
+    attributes:
+      { label: Redacted logs, description: Remove secrets and private repository content. }
+  - type: textarea
+    id: reproduction
+    attributes: { label: Reproduction steps }
+    validations: { required: true }

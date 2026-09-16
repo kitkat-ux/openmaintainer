@@ -1,0 +1,22 @@
+name: AI provider request
+description: Request support for an AI provider.
+title: 'provider: '
+labels: [provider, triage]
+body:
+  - type: input
+    id: provider
+    attributes: { label: Provider name }
+    validations: { required: true }
+  - type: input
+    id: docs
+    attributes: { label: API documentation URL }
+  - type: checkboxes
+    id: compatible
+    attributes:
+      label: Compatibility
+      options:
+        - label: The provider is OpenAI-compatible.
+        - label: The provider supports reliable structured JSON output.
+  - type: textarea
+    id: notes
+    attributes: { label: Additional provider details }

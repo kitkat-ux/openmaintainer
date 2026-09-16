@@ -1,0 +1,26 @@
+{
+  "name": "@openmaintainer/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "openmaintainer": "dist/index.js"
+  },
+  "exports": "./dist/index.js",
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openmaintainer/ai": "workspace:*",
+    "@openmaintainer/config": "workspace:*",
+    "@openmaintainer/core": "workspace:*",
+    "@openmaintainer/shared": "workspace:*",
+    "commander": "^12.1.0",
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "@types/node": "^22.10.2"
+  }
+}
