@@ -36,3 +36,11 @@ class LocalProvider implements AIProvider {
 ```
 
 Validate provider-native output at the adapter boundary, keep credentials out of prompts and logs, add offline tests, then inject the adapter from the app or CLI. GitHub event handling and core workflows should not change.
+
+## Transport and output contract
+
+The overall deadline is 45 seconds by default, including retry waits and response reads. HTTP 429/502/503/504 allow two retries (three attempts total). Missing/malformed `Retry-After` uses 100ms × 2^attempt plus 0–49ms jitter; numeric seconds and HTTP dates are supported and capped at 10 seconds. Authentication, permission, network, schema and JSON errors are not retried. Abort signals and timeouts stop waits; errors do not include raw upstream messages or causes.
+
+Because `response_format: json_object` requires an object, duplicate and release HTTP responses use `{ "items": [...] }`. The public `AIProvider` methods still return arrays. PR and triage return objects directly. No real provider endpoint has been exercised by the offline suite; providers differ in structured-output support.
+
+Release categories come from validated model output, but public entry text and links come only from supplied PR metadata. Unknown and repeated references are discarded. Model-written prose is intentionally not published: a valid reference alone cannot prove a generated claim is factual. The caller must supply genuinely merged PRs; the CLI does not verify merge state with GitHub.

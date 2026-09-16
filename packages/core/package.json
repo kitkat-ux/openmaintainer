@@ -12,9 +12,14 @@
   "dependencies": {
     "@openmaintainer/ai": "workspace:*",
     "@openmaintainer/config": "workspace:*",
-    "@openmaintainer/shared": "workspace:*"
+    "@openmaintainer/shared": "workspace:*",
+    "picomatch": "^4.0.3"
   },
   "devDependencies": {
+    "@types/picomatch": "^4",
     "tsup": "^8.3.5"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

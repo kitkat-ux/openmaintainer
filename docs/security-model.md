@@ -4,11 +4,11 @@
 
 - HMAC SHA-256 webhook verification uses a timing-safe comparison and rejects missing/invalid signatures.
 - Fastify caps webhook bodies at 1.5 MB. Provider requests and diffs are bounded by configuration.
-- Zod validates configuration, provider output, and core data at boundaries.
+- Zod validates configuration, webhook routing fields, CLI fixture shapes and all provider results (including custom providers in core).
 - Repository content is untrusted prompt data. Versioned prompts explicitly reject embedded instructions and never receive environment variables.
 - No repository code is run. No dynamic evaluation is used. Repository text never becomes a shell command.
-- Commands require enabled configuration and a write-capable association; bot comments are ignored.
-- Comments carry invisible markers and are updated rather than duplicated.
+- Commands require enabled configuration and a verified repository role; bot comments are ignored.
+- Comments carry exact leading markers and are updated only when authored through the configured App. Per-issue serialization prevents same-process create races; this does not coordinate replicas.
 - Logs redact credential-shaped fields and avoid raw prompts, headers, secrets, and full content.
 - The Docker runtime runs as a non-root user and does not bake secrets into the image.
 

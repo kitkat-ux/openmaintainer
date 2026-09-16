@@ -1,11 +1,14 @@
 # Maintainer commands
 
-Commands are written as GitHub comments using the configured prefix (default `/om`):
+Commands must begin with the configured prefix (default `/om`) as the first token of a newly created GitHub comment:
 
-- `/om help` — show available commands.
-- `/om review` — run a review when the comment is on a pull request (event wiring for manual review is intentionally conservative in v0.1).
-- `/om summarize` — reserved summary operation.
-- `/om triage` — triage the current issue.
+- `/om` or `/om help` — list commands.
+- `/om review` — review the current PR; an explicit authorized command can review a draft.
+- `/om summarize` — alias of review, not a separate summary operation.
+- `/om triage` — triage the current issue (not a PR).
 - `/om duplicates` — compare the current issue with bounded candidates.
+- `/om release-notes` — show CLI instructions. It does **not** fetch a release range or publish anything.
 
-Only enabled commands from write-capable repository associations are accepted. Bot-authored comments are ignored. Unknown commands do nothing, and unauthorized comments receive no internal configuration details. Automatic workflows fail quietly to avoid comment spam; logs contain safe diagnostics.
+Every command, including help, checks the comment author's current repository role through GitHub's collaborator-permission API. `admin`, `maintain`, and `write` are allowed by default. `triage` requires explicit inclusion in `commands.allowedRoles`; read/unknown roles and failed permission lookups are denied. Author association is not an authorization source. Permissions are checked before provider calls.
+
+Bot-authored comments, bot-sender events, and comment edits are ignored. Unrecognized prefixes/commands do nothing. Feature switches still apply to commands. Unauthorized users receive no internal configuration details. Processing failures return 503 with no upstream exception details; arrange redelivery through GitHub's delivery UI or an operator-managed queue.

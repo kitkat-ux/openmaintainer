@@ -11,11 +11,13 @@
   },
   "dependencies": {
     "@octokit/rest": "^21.1.0",
-    "@openmaintainer/shared": "workspace:*",
-    "fastify": "^5.2.1"
+    "@openmaintainer/shared": "workspace:*"
   },
   "devDependencies": {
-    "tsup": "^8.3.5",
-    "@types/node": "^22.10.2"
-  }
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5"
+  },
+  "files": [
+    "dist"
+  ]
 }

@@ -10,7 +10,7 @@ flowchart TD
   Core --> AI[AIProvider boundary]
   AI --> Result[Zod-validated result]
   Result --> Adapter[Octokit GitHub adapter]
-  Adapter --> Comment[Comment or review]
+  Adapter --> Comment[Marked summary comment]
   CLI[CLI and demo] --> Core
 ```
 
@@ -64,4 +64,6 @@ sequenceDiagram
   C->>G: optional marked comment; no automatic close
 ```
 
-The current app is synchronous and bounded. A future storage adapter can add durable delivery idempotency, but the in-memory nature of the MVP is documented and does not pretend to survive restarts.
+Core's public barrel preserves the existing exports. Review selection/risk/service/rendering, issue triage/duplicates/rendering, release generation and commands are cohesive modules. The app entrypoint composes environment loading and server creation; `server.ts` owns raw-byte verification, replay/capacity control and safe errors, `events.ts` owns routing and small domain handlers, and `adapters.ts` initializes installation-scoped Octokit. No DI framework or database was introduced.
+
+The app is synchronous: a process-local 10-minute/1,000-ID cache coalesces successful deliveries, a 20-request cap bounds pending work, and per-target promises serialize comment upserts. Failed deliveries are not cached. This state is neither durable nor shared across replicas. GitHub may time out before provider work completes; operators need manual or queued redelivery until a durable worker architecture exists.

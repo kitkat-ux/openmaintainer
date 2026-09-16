@@ -2,10 +2,12 @@ import { Octokit } from '@octokit/rest';
 import type { PullRequestFile } from '@openmaintainer/shared';
 import { GitHubApiError, truncate } from '@openmaintainer/shared';
 export interface GitHubAdapter {
+  getPermission(repository: string, username: string): Promise<string | undefined>;
   getPullRequest(
     repository: string,
     number: number,
   ): Promise<{
+    draft?: boolean;
     title: string;
     body: string;
     baseRef?: string;
@@ -26,12 +28,31 @@ export interface GitHubAdapter {
   ): Promise<void>;
 }
 function repoParts(repository: string): { owner: string; repo: string } {
+  if (!/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repository))
+    throw new GitHubApiError('Repository must use owner/name format.');
   const [owner, repo] = repository.split('/');
   if (!owner || !repo) throw new GitHubApiError('Repository must use owner/name format.');
   return { owner, repo };
 }
 export class OctokitGitHubAdapter implements GitHubAdapter {
-  constructor(private readonly octokit: Octokit) {}
+  constructor(
+    private readonly octokit: Octokit,
+    private readonly appId?: number,
+  ) {}
+  async getPermission(repository: string, username: string): Promise<string | undefined> {
+    const { owner, repo } = repoParts(repository);
+    try {
+      const result = await this.octokit.rest.repos.getCollaboratorPermissionLevel({
+        owner,
+        repo,
+        username,
+      });
+      return result.data.role_name ?? result.data.permission;
+    } catch {
+      // A denied or unavailable permission lookup must never grant access.
+      return undefined;
+    }
+  }
   async getPullRequest(repository: string, number: number) {
     const { owner, repo } = repoParts(repository);
     try {
@@ -45,13 +66,14 @@ export class OctokitGitHubAdapter implements GitHubAdapter {
         }),
       ]);
       return {
+        draft: pr.data.draft ?? false,
         title: pr.data.title,
         body: pr.data.body ?? '',
         baseRef: pr.data.base.ref,
         headRef: pr.data.head.ref,
         files: files.map((file) => ({
           path: file.filename,
-          ...(file.patch ? { patch: truncate(file.patch, 200_000) } : {}),
+          ...(file.patch ? { patch: file.patch } : {}),
           additions: file.additions,
           deletions: file.deletions,
           binary: !file.patch && file.changes > 0,
@@ -76,7 +98,7 @@ export class OctokitGitHubAdapter implements GitHubAdapter {
     const { owner, repo } = repoParts(repository);
     try {
       const result = await this.octokit.rest.search.issuesAndPullRequests({
-        q: `${query} repo:${owner}/${repo} is:issue`,
+        q: `${query.replace(/[^a-zA-Z0-9 ]/g, ' ').slice(0, 150)} repo:${owner}/${repo} is:issue`,
         per_page: Math.min(limit, 100),
       });
       return result.data.items.map((item) => ({
@@ -103,8 +125,15 @@ export class OctokitGitHubAdapter implements GitHubAdapter {
         issue_number: issueNumber,
         per_page: 100,
       });
+      const ownAppId = this.appId ?? (await this.octokit.rest.apps.getAuthenticated()).data?.id;
+      if (!ownAppId) throw new GitHubApiError('Unable to determine GitHub App identity.');
+      if (!body.startsWith(`${commentMarker}\n`)) body = `${commentMarker}\n${body}`;
+      body = truncate(body, 60_000); // Stay below GitHub's 65,536-character comment limit.
       const existing = comments.find(
-        (comment) => comment.user?.type === 'Bot' && comment.body?.includes(commentMarker),
+        (comment) =>
+          comment.user?.type === 'Bot' &&
+          comment.performed_via_github_app?.id === ownAppId &&
+          comment.body?.startsWith(`${commentMarker}\n`),
       );
       if (existing)
         await this.octokit.rest.issues.updateComment({

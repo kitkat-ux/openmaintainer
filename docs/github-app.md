@@ -8,4 +8,10 @@
 6. Install the App in selected repositories and configure `.env` with `GITHUB_APP_ID`, `GITHUB_PRIVATE_KEY`, and `GITHUB_WEBHOOK_SECRET`.
 7. Confirm `GET /health`, then deliver a test webhook from GitHub's App settings.
 
-The app will only comment or update marked comments. It does not merge, close, publish, delete, or modify source files. `issue_comment` commands are allowed for OWNER, MEMBER, and COLLABORATOR associations and still respect `commands.allowedRoles`.
+The app will only comment or update marked comments. It does not merge, close, publish, delete, or modify source files. `issue_comment` commands query actual repository roles through the Metadata-read collaborator-permission endpoint and respect `commands.allowedRoles`. Author association does not grant access.
+
+## API/permission inventory
+
+Current calls: `pulls.get`/`pulls.listFiles` (PR read), `issues.get`/`issues.listComments`/`issues.createComment`/`issues.updateComment` (Issues read/write), issue search (repository visibility), and `repos.getCollaboratorPermissionLevel` (Metadata read). App identity is supplied by configured App ID; the standalone adapter can fall back to `apps.getAuthenticated` with App authentication. No source write, label write, merge, close, release, or administrative endpoint is called. Contents read is reserved, not currently used.
+
+Upserts require the comment's `performed_via_github_app.id` to equal the configured App ID and its body to start with the exact `<!-- openmaintainer:pr-review -->` (or `issue-triage`, `duplicates`, `command`) marker followed by a newline. Markers embedded in another bot's or a user's comment are never treated as owned comments.
