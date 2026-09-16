@@ -20,7 +20,7 @@
     "@openmaintainer/logger": "workspace:*",
     "@openmaintainer/shared": "workspace:*",
     "fastify": "^5.2.1",
-    "zod": "^3.25.76"
+    "zod": "^4.6.4"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
