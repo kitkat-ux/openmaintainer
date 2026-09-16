@@ -1,0 +1,8 @@
+version: 1
+review:
+  minimumConfidence: 0.85
+  maxInlineComments: 4
+  focus: [correctness, security, tests]
+issues:
+  triage:
+    enabled: false

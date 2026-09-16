@@ -1,0 +1,16 @@
+[
+  {
+    "number": 42,
+    "title": "Improve user search",
+    "body": "Adds input validation to search.",
+    "labels": ["bug"],
+    "url": "https://github.com/example/project/pull/42"
+  },
+  {
+    "number": 43,
+    "title": "Document local setup",
+    "body": "Adds setup instructions.",
+    "labels": ["documentation"],
+    "url": "https://github.com/example/project/pull/43"
+  }
+]

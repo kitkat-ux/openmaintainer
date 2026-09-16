@@ -1,0 +1,9 @@
+version: 1
+review:
+  enabled: false
+issues:
+  triage:
+    enabled: true
+  duplicates:
+    enabled: true
+    minimumConfidence: 0.86

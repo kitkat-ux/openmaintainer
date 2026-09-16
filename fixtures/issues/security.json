@@ -1,0 +1,6 @@
+{
+  "repository": "example/project",
+  "number": 8,
+  "title": "Possible token exposed in logs",
+  "body": "I think a token may be visible in a public log. Please do not share exploit details here; I can provide a private report."
+}

@@ -1,0 +1,23 @@
+{
+  "repository": "example/project",
+  "number": 42,
+  "title": "Improve user search",
+  "body": "Use the search term from the request.",
+  "baseRef": "main",
+  "headRef": "search-fix",
+  "files": [
+    {
+      "path": "src/search.ts",
+      "additions": 4,
+      "deletions": 1,
+      "patch": "+ const query = req.input;\n+ return db.query(query);"
+    },
+    {
+      "path": "src/search.test.ts",
+      "additions": 8,
+      "deletions": 0,
+      "patch": "+ test('searches names', () => {});"
+    },
+    { "path": "pnpm-lock.yaml", "additions": 2, "deletions": 2, "patch": "lockfile metadata" }
+  ]
+}

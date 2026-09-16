@@ -1,0 +1,8 @@
+version: 1
+review:
+  enabled: true
+issues:
+  triage:
+    enabled: true
+  duplicates:
+    enabled: true
