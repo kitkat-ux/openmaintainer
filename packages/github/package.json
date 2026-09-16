@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@octokit/rest": "^21.1.0",
+    "@octokit/rest": "^22.0.1",
     "@openmaintainer/shared": "workspace:*"
   },
   "devDependencies": {
