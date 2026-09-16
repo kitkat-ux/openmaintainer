@@ -26,7 +26,7 @@
     "verify": "corepack pnpm format:check && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build && corepack pnpm demo:run"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.27.9",
+    "@changesets/cli": "^3.0.2",
     "@eslint/js": "^9.17.0",
     "@types/node": "^22.10.2",
     "@vitest/coverage-v8": "^4.1.11",
