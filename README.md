@@ -148,7 +148,7 @@ Telemetry is disabled by default. Application logs use safe event/outcome metada
 
 ## Operational limits
 
-Webhook processing is synchronous. Successful delivery IDs are cached for ten minutes (up to 1,000 IDs), with up to 20 pending requests and per-issue serialization. This is not durable or cross-replica idempotency. Errors return 503; operators must arrange redelivery (GitHub does not automatically redeliver failed webhooks). Run one instance until a durable queue/store is added. Very large PRs, missing GitHub patches, and configured skips are reported as partial analysis. GitHub's PR files endpoint itself has a 3,000-file ceiling.
+Webhook processing is synchronous. A fixed limit of 120 requests/minute per direct peer IP applies before authentication; health is exempt. Successful delivery IDs are cached for ten minutes (up to 1,000 IDs), with up to 20 pending requests and per-issue serialization. This is not durable or cross-replica idempotency. Errors return 503; operators must arrange redelivery (GitHub does not automatically redeliver failed webhooks). Run one instance until a durable queue/store is added. Very large PRs, missing GitHub patches, and configured skips are reported as partial analysis. GitHub's PR files endpoint itself has a 3,000-file ceiling.
 
 Docker definitions are included but have not been built or run in the Phase 2 audit environment. See [self-hosting limitations](docs/self-hosting.md) and the [audit report](docs/phase-2-audit.md).
 

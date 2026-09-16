@@ -17,10 +17,14 @@ Inspected latest fetched `main` at `c5abc804f7c088e28861459aed97289889274ff1`: e
 - Security reports could repeat exploit text above a disclosure warning. Sensitive triage output is now a fixed SECURITY.md/private-reporting message; duplicate comparison is suppressed for locally detected sensitive reports. No issue is closed.
 - Markdown filtering only addressed two mentions and HTML comments. It now neutralizes all username/team mentions and HTML outside code spans/fences; code stays intact. This is not a comprehensive Markdown policy engine.
 - Upserts could edit another bot's marked comment. Matching now requires exact leading marker/newline and the configured App identity. Same-target events serialize and successful delivery IDs are cached within one process. Empty duplicate results replace stale suggestions. Comment bodies are bounded at 60,000 characters to stay below the GitHub API limit.
-- Webhook JSON was cast without runtime validation, and failures were acknowledged as success. Routing fields now validate after HMAC verification, malformed bodies fail safely, and upstream errors return 503 without secret-bearing exception objects. Raw payload cap remains 1.5 MB.
+- Webhook JSON was cast without runtime validation, and failures were acknowledged as success. Routing fields now validate after HMAC verification, malformed bodies fail safely, and upstream errors return 503 without secret-bearing exception objects. Raw payload cap remains 1.5 MB. A Fastify rate-limit plugin enforces 120 requests per minute per direct peer IP before authorization, excluding health; forwarding headers are not trusted. This complements the concurrency cap, not a persistent cost quota.
 - CLI commands silently processed bundled mock data. Explicit fixture input and mock selection make provenance visible; real provider mode requires credentials. Validate fails on a missing file; runtime defaults remain supported. Bad YAML no longer prints source snippets; nested keys are strict.
 - Docker built only the app, not external workspace packages, and relocated dependency paths. Both Dockerfiles now build the dependency closure and package it with `pnpm deploy --prod`; package files lists include built artifacts only.
 - Coverage excluded every `index.ts`, creating an unrepresentative 91.11% baseline over almost no logic (17 tests). That exclusion is removed. New offline tests exercise the real adapter via injected Octokit HTTP transport.
+
+### Hosted security-scan follow-up
+
+The first PR CodeQL run flagged missing request rate limiting, a polynomial HTML-comment regex, and incomplete/case-sensitive sanitization patterns. Added `@fastify/rate-limit` (the maintained Fastify plugin), registered before routes, and an offline test proving unauthenticated request limits cannot be bypassed with forwarded-IP headers. Replaced comment stripping with a forward-only scan and added repeated/nested delimiter tests; HTML is still escaped after stripping. Corrected case-insensitive assertions rather than suppressing CodeQL findings.
 
 ## Architecture
 
@@ -80,8 +84,8 @@ Local validation on Node 22.22.3 / pnpm 9.15.4:
 | `corepack pnpm format:check`                                         | PASS                                                                      |
 | `corepack pnpm lint`                                                 | PASS                                                                      |
 | `corepack pnpm typecheck`                                            | PASS                                                                      |
-| `corepack pnpm test`                                                 | PASS — 161 tests across 12 files                                          |
-| `corepack pnpm test:coverage`                                        | PASS — statements 92.34%, branches 83.33%, functions 89.04%, lines 94.59% |
+| `corepack pnpm test`                                                 | PASS — 163 tests across 12 files                                          |
+| `corepack pnpm test:coverage`                                        | PASS — statements 92.51%, branches 83.63%, functions 89.18%, lines 94.56% |
 | `corepack pnpm build`                                                | PASS                                                                      |
 | `corepack pnpm demo`                                                 | PASS — deterministic mock, all four workflows                             |
 | `corepack pnpm verify`                                               | PASS                                                                      |

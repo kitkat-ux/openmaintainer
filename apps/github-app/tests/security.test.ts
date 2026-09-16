@@ -119,3 +119,18 @@ it('rejects excess pending work instead of unbounded queue growth', async () => 
   }
   expect(h.review).toHaveBeenCalledTimes(20);
 });
+it('rate-limits requests before authorization, without trusting forwarded IP headers', async () => {
+  const h = setup();
+  for (let i = 0; i < 120; i++) {
+    const response = await h.app.inject({
+      method: 'POST',
+      url: '/webhooks/github',
+      payload: '{}',
+      headers: { 'content-type': 'application/json', 'x-forwarded-for': `192.0.2.${i}` },
+    });
+    expect(response.statusCode).toBe(401);
+  }
+  expect((await h.send('pull_request', h.pr())).statusCode).toBe(429);
+  expect(h.review).not.toHaveBeenCalled();
+  expect((await h.app.inject('/health')).statusCode).toBe(200);
+});

@@ -4,7 +4,7 @@ it('neutralizes user/team mentions, hidden HTML and encoded HTML outside code', 
   const result = sanitizeMarkdown(
     '@everyone @here @some-user @org/team <script>alert(1)</script><!-- hidden --> &lt;span&gt;',
   );
-  expect(result).not.toMatch(/@[a-z]|<script|<!--/);
+  expect(result).not.toMatch(/@[a-z]|<script|<!--/i);
   expect(result).toContain('&lt;script&gt;');
   expect(result).toContain('&amp;lt;');
 });
@@ -25,4 +25,10 @@ it('redacts nested credential fields', () => {
 it('rejects empty secret and malformed signature', () => {
   expect(verifyGithubSignature(Buffer.from('{}'), undefined, '')).toBe(false);
   expect(verifyGithubSignature(Buffer.from('{}'), `sha256=${'x'.repeat(64)}`, 's')).toBe(false);
+});
+it('handles repeated unclosed and nested comment delimiters without backtracking', () => {
+  expect(sanitizeMarkdown('before' + '<!--'.repeat(100_000))).toBe('before');
+  const output = sanitizeMarkdown('a<!--nested <!-- -->tail-->b <SCRipt>x</SCRipt>');
+  expect(output).not.toMatch(/<!--|<script/i);
+  expect(output).toContain('&lt;SCRipt&gt;');
 });

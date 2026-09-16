@@ -185,6 +185,23 @@ export function jaccardSimilarity(a: string, b: string): number {
   for (const token of left) if (right.has(token)) intersection += 1;
   return intersection / (left.size + right.size - intersection);
 }
+/** Single forward scan: repeated unclosed comment openers cannot trigger regex backtracking. */
+function stripHtmlComments(value: string): string {
+  const parts: string[] = [];
+  let offset = 0;
+  for (;;) {
+    const start = value.indexOf('<!--', offset);
+    if (start === -1) {
+      parts.push(value.slice(offset));
+      break;
+    }
+    parts.push(value.slice(offset, start));
+    const end = value.indexOf('-->', start + 4);
+    if (end === -1) break;
+    offset = end + 3;
+  }
+  return parts.join('');
+}
 export function sanitizeMarkdown(value: string): string {
   // Preserve code spans/fences verbatim; they do not create GitHub mentions or HTML.
   return value
@@ -192,8 +209,7 @@ export function sanitizeMarkdown(value: string): string {
     .map((part, index) =>
       index % 2
         ? part
-        : part
-            .replace(/<!--[\s\S]*?-->/g, '')
+        : stripHtmlComments(part)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
