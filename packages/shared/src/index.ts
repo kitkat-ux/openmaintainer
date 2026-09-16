@@ -31,19 +31,20 @@ export type ReviewFinding = z.infer<typeof ReviewFindingSchema>;
 
 export interface PullRequestFile {
   path: string;
-  patch?: string;
+  patch?: string | undefined;
   additions: number;
   deletions: number;
-  binary?: boolean;
+  binary?: boolean | undefined;
 }
 export interface PullRequestReviewInput {
   repository: string;
   number: number;
   title: string;
   body: string;
-  baseRef?: string;
-  headRef?: string;
+  baseRef?: string | undefined;
+  headRef?: string | undefined;
   files: PullRequestFile[];
+  focus?: string[];
 }
 export interface PullRequestReviewResult {
   summary: string;
@@ -84,7 +85,7 @@ export interface DuplicateCandidate {
   number: number;
   title: string;
   body: string;
-  url?: string;
+  url?: string | undefined;
   similarity?: number;
 }
 export interface DuplicateComparison {
@@ -100,7 +101,7 @@ export interface ReleaseChange {
   category: string;
   text: string;
   reference: string;
-  url?: string;
+  url?: string | undefined;
 }
 export interface ReleaseNotesInput {
   from: string;
@@ -110,7 +111,7 @@ export interface ReleaseNotesInput {
     title: string;
     body: string;
     labels: string[];
-    url?: string;
+    url?: string | undefined;
     mergedAt?: string;
   }>;
 }
@@ -162,7 +163,10 @@ export class RateLimitError extends OpenMaintainerError {
 
 export function truncate(value: string, max: number): string {
   if (value.length <= max) return value;
-  return `${value.slice(0, Math.max(0, max - 24))}\n...[truncated by OpenMaintainer]`;
+  const suffix = '\n...[truncated by OpenMaintainer]';
+  return max <= suffix.length
+    ? value.slice(0, max)
+    : `${value.slice(0, max - suffix.length)}${suffix}`;
 }
 export function tokenize(value: string): Set<string> {
   return new Set(
@@ -181,10 +185,37 @@ export function jaccardSimilarity(a: string, b: string): number {
   for (const token of left) if (right.has(token)) intersection += 1;
   return intersection / (left.size + right.size - intersection);
 }
+/** Single forward scan: repeated unclosed comment openers cannot trigger regex backtracking. */
+function stripHtmlComments(value: string): string {
+  const parts: string[] = [];
+  let offset = 0;
+  for (;;) {
+    const start = value.indexOf('<!--', offset);
+    if (start === -1) {
+      parts.push(value.slice(offset));
+      break;
+    }
+    parts.push(value.slice(offset, start));
+    const end = value.indexOf('-->', start + 4);
+    if (end === -1) break;
+    offset = end + 3;
+  }
+  return parts.join('');
+}
 export function sanitizeMarkdown(value: string): string {
+  // Preserve code spans/fences verbatim; they do not create GitHub mentions or HTML.
   return value
-    .replace(/@(everyone|here)\b/gi, '@\\$1')
-    .replace(/<!--[\s\S]*?-->/g, '')
+    .split(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]+`)/g)
+    .map((part, index) =>
+      index % 2
+        ? part
+        : stripHtmlComments(part)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/@(?=[a-z0-9])/gi, '@\u200b'),
+    )
+    .join('')
     .replace(/\r/g, '');
 }
 export function redact(value: unknown): unknown {
@@ -199,7 +230,7 @@ export function redact(value: unknown): unknown {
   if (value && typeof value === 'object')
     return Object.fromEntries(
       Object.entries(value).map(([k, v]) => [
-        /key|token|secret|authorization|password/i.test(k) ? k : k,
+        k,
         /key|token|secret|authorization|password/i.test(k) ? '[REDACTED]' : redact(v),
       ]),
     );
@@ -210,7 +241,7 @@ export function verifyGithubSignature(
   signature: string | undefined,
   secret: string,
 ): boolean {
-  if (!signature?.startsWith('sha256=') || !secret) return false;
+  if (!signature || !/^sha256=[a-f0-9]{64}$/.test(signature) || !secret) return false;
   const expected = `sha256=${createHmac('sha256', secret).update(payload).digest('hex')}`;
   const received = Buffer.from(signature);
   const actual = Buffer.from(expected);
@@ -219,3 +250,39 @@ export function verifyGithubSignature(
 export function marker(name: string): string {
   return `<!-- openmaintainer:${name} -->`;
 }
+
+// Local JSON fixtures are untrusted too. Bounds prevent accidentally reading enormous inputs
+// into provider workflows; core applies tighter per-operation budgets after prioritization.
+export const PullRequestFileSchema = z.object({
+  path: z.string().min(1).max(500),
+  patch: z.string().max(2_000_000).optional(),
+  additions: z.number().int().nonnegative(),
+  deletions: z.number().int().nonnegative(),
+  binary: z.boolean().optional(),
+});
+export const PullRequestInputSchema = z.object({
+  repository: z.string().min(3).max(300),
+  number: z.number().int().positive(),
+  title: z.string().max(500),
+  body: z.string().max(100_000),
+  baseRef: z.string().optional(),
+  headRef: z.string().optional(),
+  files: z.array(PullRequestFileSchema).max(3000),
+});
+export const IssueInputSchema = z.object({
+  repository: z.string().min(3).max(300),
+  number: z.number().int().positive(),
+  title: z.string().max(500),
+  body: z.string().max(100_000),
+});
+export const MergedPullRequestsSchema = z
+  .array(
+    z.object({
+      number: z.number().int().positive(),
+      title: z.string().min(1).max(500),
+      body: z.string().max(100_000),
+      labels: z.array(z.string().max(100)).max(100),
+      url: z.string().url().max(1000).optional(),
+    }),
+  )
+  .max(200);

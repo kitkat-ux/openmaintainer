@@ -10,15 +10,15 @@ OpenMaintainer helps maintainers review pull requests, triage issues, find likel
 
 ## Status
 
-OpenMaintainer is an early `0.1.0` release. The core workflows, CLI, webhook server, mock provider, tests, Docker setup, and documentation are implemented. APIs may change before `1.0.0`.
+OpenMaintainer is an early `0.1.0` development version (not yet tagged). The core workflows, CLI, webhook server, mock provider, tests, Docker setup, and documentation are implemented. APIs may change before `1.0.0`.
 
 ## Features
 
-- **Pull request review** with size limits, deterministic file prioritization, confidence filtering, risk scoring, and one deduplicated summary comment.
+- **Pull request review** with size limits, deterministic file prioritization, confidence filtering, risk scoring, and a marked summary comment updated within a single server process.
 - **Issue triage** with categories, label suggestions, missing-information detection, and security-sensitive handling.
 - **Duplicate detection** using local keyword similarity followed by a bounded provider comparison.
-- **Release notes** generated as traceable Markdown from merged pull requests; never published automatically.
-- **Maintainer commands** (`/om help`, `review`, `summarize`, `triage`, `duplicates`) gated by GitHub permissions.
+- **Release notes** categorized Markdown from supplied merged-PR metadata, using source titles rather than model-written claims; never published automatically.
+- **Maintainer commands** (`/om help`, `review`, `summarize`, `triage`, `duplicates`, `release-notes` guidance) gated by GitHub permissions.
 - **Provider boundary** via `AIProvider`, including an OpenAI-compatible HTTP adapter and deterministic mock provider.
 - **Privacy controls** with telemetry off by default, bounded context, safe logging, webhook signature verification, and no repository-code execution.
 
@@ -68,14 +68,14 @@ To use a real provider, set `OPENMAINTAINER_API_KEY`, `OPENMAINTAINER_MODEL`, an
 
 ## GitHub App and self-hosting
 
-The HTTP app listens on `PORT` (default `3000`) and exposes `GET /health` and `POST /webhooks/github`. Create a GitHub App with only these permissions:
+The HTTP app listens on `PORT` (default `3000`) and exposes `GET /health` and `POST /webhooks/github`. The app requires GitHub credentials and a webhook secret at startup. For real AI, set both provider key and model; an explicit `OPENMAINTAINER_PROVIDER=mock` enables fixture-like responses for development. Create a GitHub App with only these permissions:
 
 - **Metadata: read-only** — repository identity and installation context.
-- **Contents: read-only** — changed file and commit content needed for analysis.
-- **Pull requests: read and write** — pull request metadata, files, reviews, and the bot's summary comment.
-- **Issues: read and write** — issue context and optional triage comments/labels.
+- **Contents: read-only** — reserved for future file-content fetching; current analysis uses PR patches.
+- **Pull requests: read and write** — PR metadata and files; comments use the Issues API.
+- **Issues: read and write** — issue context and comments; labels are suggested, not applied.
 
-No administration, Actions, deletion, merge, or release permissions are required. Configure the webhook secret and subscribe only to `pull_request`, `issues`, and `issue_comment`. See [docs/github-app.md](docs/github-app.md), [docs/self-hosting.md](docs/self-hosting.md), and [docs/security-model.md](docs/security-model.md).
+No administration, Actions, repository-contents write, or additional release permissions are requested. GitHub has no separate “merge permission”: PR write is capable of merging, but OpenMaintainer never calls merge endpoints. Configure the webhook secret and subscribe only to `pull_request`, `issues`, and `issue_comment`. See [docs/github-app.md](docs/github-app.md), [docs/self-hosting.md](docs/self-hosting.md), and [docs/security-model.md](docs/security-model.md).
 
 Docker and Compose examples are included:
 
@@ -115,19 +115,21 @@ privacy:
   telemetry: false
 ```
 
-The complete reference is in [docs/configuration.md](docs/configuration.md). Relevant PR, issue, and diff content may be sent to the configured AI provider; read [docs/privacy.md](docs/privacy.md) before enabling a provider for private repositories.
+The complete reference is in [docs/configuration.md](docs/configuration.md). The server reads operator-local configuration at startup, not configuration from each installed repository. Relevant PR, issue, and diff content may be sent to the configured AI provider; read [docs/privacy.md](docs/privacy.md) before enabling a provider for private repositories.
 
 ## CLI
 
 ```bash
 pnpm cli -- init [--yes]
 pnpm cli -- validate
-pnpm cli -- review --fixture fixtures/pull-requests/example.json
-pnpm cli -- triage --fixture fixtures/issues/example.json
-pnpm cli -- release-notes --from v0.1.0 --to HEAD --dry-run
+pnpm cli -- review --fixture fixtures/pull-requests/example.json --mock
+pnpm cli -- triage --fixture fixtures/issues/example.json --mock
+pnpm cli -- release-notes --from v0.1.0 --to HEAD --fixture fixtures/pull-requests/merged.json --mock --dry-run
 pnpm cli -- doctor
 pnpm cli -- version
 ```
+
+These fixture commands are offline with `--mock`. Omit `--mock` to require a configured OpenAI-compatible provider. The CLI does not fetch GitHub PRs or compare git refs: `--from`/`--to` label the supplied release metadata. The demo always uses a deterministic mock and prints fictional fixture URLs, not live activity.
 
 ## Architecture
 
@@ -140,9 +142,15 @@ Domain workflows in `packages/core` do not import Fastify, Octokit, or an AI SDK
 
 ## Security and privacy
 
-Webhook signatures are verified with timing-safe comparison, all external inputs are schema-validated, command execution checks repository permissions, and bot-authored comments are ignored. Repository text is framed as untrusted data in versioned prompts; it cannot grant instructions or disclose server secrets. OpenMaintainer never executes repository code or builds shell commands from repository text.
+Webhook signatures are verified with timing-safe comparison, webhook routing fields, CLI fixture shapes, configuration, and AI responses are schema-validated, command execution checks repository permissions, and bot-authored comments are ignored. Repository text is framed as untrusted data in versioned prompts; it is never executed and server environment values are not included in prompts. Prompt framing cannot guarantee that a model ignores malicious instructions. OpenMaintainer never executes repository code or builds shell commands from repository text.
 
-Telemetry is disabled by default. Logs include event and operation metadata, never API keys, private keys, authorization headers, raw prompts, or complete repository contents. Provider data handling is outside this project; configure an endpoint whose policy fits your repository. See [docs/privacy.md](docs/privacy.md) and [SECURITY.md](SECURITY.md).
+Telemetry is disabled by default. Application logs use safe event/outcome metadata and do not serialize upstream exceptions, prompts, or credentials. Provider data handling is outside this project; configure an endpoint whose policy fits your repository. See [docs/privacy.md](docs/privacy.md) and [SECURITY.md](SECURITY.md).
+
+## Operational limits
+
+Webhook processing is synchronous. A fixed limit of 120 requests/minute per direct peer IP applies before authentication; health is exempt. Successful delivery IDs are cached for ten minutes (up to 1,000 IDs), with up to 20 pending requests and per-issue serialization. This is not durable or cross-replica idempotency. Errors return 503; operators must arrange redelivery (GitHub does not automatically redeliver failed webhooks). Run one instance until a durable queue/store is added. Very large PRs, missing GitHub patches, and configured skips are reported as partial analysis. GitHub's PR files endpoint itself has a 3,000-file ceiling.
+
+Docker definitions are included but have not been built or run in the Phase 2 audit environment. See [self-hosting limitations](docs/self-hosting.md) and the [audit report](docs/phase-2-audit.md).
 
 ## Roadmap
 

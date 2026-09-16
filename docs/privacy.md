@@ -12,6 +12,6 @@ The configured `AIProvider` receives only the bounded input for its requested op
 
 ## Logs
 
-Structured logs may include event type, delivery ID, repository name, operation, duration, and safe outcome. They do not intentionally include API keys, private keys, authorization headers, raw prompts, or complete private repository contents. Enable debug features only after assessing the privacy impact; v0.1 does not log prompts even when its reserved debug setting is present.
+Structured logs may include event type, delivery ID, repository name, operation, duration, and safe outcome. They do not intentionally include API keys, private keys, authorization headers, raw prompts, or complete private repository contents. Prompt logging is unsupported; `privacy.debugPrompts` and `privacy.telemetry` accept only false.
 
 To minimize data, disable individual workflows, lower `maxFiles` and `maxDiffCharacters`, expand ignore patterns, use a self-hosted provider endpoint, and avoid installing the App on repositories whose policy disallows external processing.

@@ -9,7 +9,7 @@ describe('shared security utilities', () => {
     expect(verifyGithubSignature(body, signature, 'wrong')).toBe(false);
   });
   it('removes unsafe markdown controls', () => {
-    expect(sanitizeMarkdown('@everyone <!-- hide -->')).toBe('@\\everyone ');
+    expect(sanitizeMarkdown('@everyone <!-- hide -->')).toBe('@\u200beveryone ');
   });
   it('computes bounded similarity', () => {
     expect(jaccardSimilarity('database query failure', 'database query failure')).toBe(1);

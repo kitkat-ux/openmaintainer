@@ -13,12 +13,13 @@ export default defineConfig({
     },
   },
   test: {
+    setupFiles: [resolve(__dirname, 'tests/offline.ts')],
     include: ['packages/**/tests/**/*.test.ts', 'apps/**/tests/**/*.test.ts', 'tests/**/*.test.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      thresholds: { statements: 85, branches: 75, functions: 80, lines: 85 },
+      reporter: ['text', 'html', 'json-summary'],
       include: ['packages/*/src/**/*.ts', 'apps/*/src/**/*.ts'],
-      exclude: ['**/index.ts'],
     },
   },
 });
